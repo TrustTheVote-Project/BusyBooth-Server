@@ -87,7 +87,8 @@ def validate_user():
             return jsonify({"code": 1, "data": "Cannot find individual"})
         else:
             booth = PollingBooth.query.filter_by(id=user.polling_booth).first()
-            return jsonify({"code": 0, "data": {"address": booth.address, 
+            return jsonify({"code": 0, "data": {"id": user.polling_booth,
+                                                "address": booth.address, 
                                                 "zip": booth.zip_code}});
         
 @main.route('/av_wait/<int:booth_id>')
@@ -176,58 +177,78 @@ def history_wait(booth_id):
         return jsonify({"code": 2, "data": "Polling booth does not exist."})
 
 
-@main.route('/start_time/<phone>', methods=['GET', 'POST'])
-def start_time(phone):
+# ASK BEN HOW TO GET THE ELAPSED TIME.
+@main.route('/log_time/<int:booth_id>', methods=['GET', 'POST'])
+def set_time(booth_id):
+    if request.method == "POST":
+        polling_booth = PollingBooth.query.filter_by(id=booth_id).first()
+        if polling_booth:
 
-    """
-    Start wait time timer for user.
+            # Creating a wait_time
+            new_waittime = WaitTime(
+                elapsed = request.form['elapsed']
+                polling_booth = polling_booth,
+            )
+            db.session.add(new_waittime)
+            db.session.commit()
+            return jsonify({"code": 0, "data": new_waittime})
 
-    Keyword arguments:
-    phone -- phone number of user (10 digit)
-
-    """
-
-    user = User.query.filter_by(phone=phone_format(phone)).first()
-
-    if user == None:
-        return jsonify({"code": 1, "data": "User account does not exist."})
-
-    if user.waittime == None:
-        wait_time = WaitTime()
-        user.waittime = wait_time
-
-        polling_place = PollingBooth.query.filter_by(id=user.polling_booth).first()
-        polling_place.wait_times.append(wait_time)
-
-        db.session.add(wait_time)
-        db.session.commit()
-        return jsonify({"code": 0, "data": "Wait time started."})
-    else:
-        return jsonify({"code": 2, "data": "Wait time already exists."})
+        return jsonify({"code": 2, "data": "Polling booth does not exist."})
+    return jsonify({"code": 2, "data": "You need to send an elapsed time in the post."})
 
 
-@main.route('/end_time/<phone>', methods=['GET', 'POST'])
-def end_time(phone):
+# @main.route('/start_time/<phone>', methods=['GET', 'POST'])
+# def start_time(phone):
 
-    """
-    End wait time timer for user.
+#     """
+#     Start wait time timer for user.
 
-    Keyword arguments:
-    phone -- phone number of user (10 digit)
+#     Keyword arguments:
+#     phone -- phone number of user (10 digit)
 
-    """
+#     """
 
-    user = User.query.filter_by(phone=phone_format(phone)).first()
+#     user = User.query.filter_by(phone=phone_format(phone)).first()
 
-    if user == None:
-        return jsonify({"code": 1, "data": "User account does not exist."})
+#     if user == None:
+#         return jsonify({"code": 1, "data": "User account does not exist."})
 
-    if user.waittime:
-        wait_time = user.waittime
-        wait_time.finished()
-        return jsonify({"code": 0, "data": "Wait time ended."})
-    else:
-        return jsonify({"code": 2, "data": "Wait time doesn't exist."})
+#     if user.waittime == None:
+#         wait_time = WaitTime()
+#         user.waittime = wait_time
+
+#         polling_place = PollingBooth.query.filter_by(id=user.polling_booth).first()
+#         polling_place.wait_times.append(wait_time)
+
+#         db.session.add(wait_time)
+#         db.session.commit()
+#         return jsonify({"code": 0, "data": "Wait time started."})
+#     else:
+#         return jsonify({"code": 2, "data": "Wait time already exists."})
+
+
+# @main.route('/end_time/<phone>', methods=['GET', 'POST'])
+# def end_time(phone):
+
+#     """
+#     End wait time timer for user.
+
+#     Keyword arguments:
+#     phone -- phone number of user (10 digit)
+
+#     """
+
+#     user = User.query.filter_by(phone=phone_format(phone)).first()
+
+#     if user == None:
+#         return jsonify({"code": 1, "data": "User account does not exist."})
+
+#     if user.waittime:
+#         wait_time = user.waittime
+#         wait_time.finished()
+#         return jsonify({"code": 0, "data": "Wait time ended."})
+#     else:
+#         return jsonify({"code": 2, "data": "Wait time doesn't exist."})
 
 
 @main.route('/polling_places')

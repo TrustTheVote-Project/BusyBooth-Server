@@ -5,7 +5,6 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     hashVal = db.Column(db.String(64), index=True)
     polling_booth = db.Column(db.Integer, db.ForeignKey('pollingbooth.id'))
-    waittime = db.relationship('WaitTime', uselist=False, backref='users')
 
     def __init__(self, hashVal, polling_booth):
         self.hashVal = hashVal
