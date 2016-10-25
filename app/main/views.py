@@ -186,8 +186,8 @@ def set_time(booth_id):
 
             # Creating a wait_time
             new_waittime = WaitTime(
-                elapsed = request.form['elapsed']
-                polling_booth = polling_booth,
+                elapsed = request.form['elapsed'],
+                polling_booth = polling_booth
             )
             db.session.add(new_waittime)
             db.session.commit()
