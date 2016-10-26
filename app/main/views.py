@@ -117,7 +117,7 @@ def history_wait(booth_id):
         # calculate start of hourly increments of time
         now = datetime.datetime.now().replace(minute=0, second=0, microsecond=0)
         past_hours = {}
-        for i in xrange(6):
+        for i in range(6):
             past_hours[(now - datetime.timedelta(hours=i)).hour] = []
 
         for time in polling_place.wait_times:
@@ -126,7 +126,8 @@ def history_wait(booth_id):
                     past_hours[time.end_time.hour].append(time.elapsed)
         
         averages = []
-        for hour in past_hours:
+        for i in range(6):
+            hour = (now - datetime.timedelta(hours=i)).hour
             if len(past_hours[hour]) == 0:
                 averages.append({"hour": hour, "time": -1})
             else:
