@@ -5,19 +5,18 @@ class WaitTime(db.Model):
     __tablename__ = 'waittime'
     id = db.Column(db.Integer, primary_key=True)
     elapsed = db.Column(db.Integer)
-    polling_booth = db.Column(db.Integer, db.ForeignKey('pollingbooth.id'))
     end_time = db.Column(db.DateTime)
-    # person = db.Column(db.Integer, db.ForeignKey('users.id'))
-
+    polling_booth = db.Column(db.Integer, db.ForeignKey('pollingbooth.id'))
+    
     def __init__(self, elapsed, polling_booth):
         self.elapsed = int(elapsed)
-        self.polling_booth = polling_booth
         self.end_time = datetime.datetime.now()
+        self.polling_booth = polling_booth
 
     def overview(self):
         return {
             "code": 0,
             "elapsed": self.elapsed,
-            "booth_id": self.polling_booth.id,
-            "end_time": self.end_time
+            "end_time": self.end_time,
+            "booth_id": self.polling_booth.id
         }

@@ -4,29 +4,24 @@ import re
 from ..models import User, WaitTime, PollingBooth
 import json
 import datetime
-from ..import db
+from .. import db
 import urllib2
 import os
 import csv
 import hashlib
 
+################################################
+#   Return format: {"code": X, "data": Y}      #
+#   0: all is well                             #
+#   1: error                                   #
+################################################
 
-"""
-ROUTES
-
-Return format: {"code": X, "data": Y}
-
----------------------
-X - 0, 1
-0: all is well
-1: error
-
-"""
 
 # sets which files are allowed by the website.
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] == 'csv'
+
 
 # Reads the uploaded documents and stores the hashes in our database.
 @main.route('/', methods=['GET', 'POST'])
@@ -46,6 +41,7 @@ def read_file():
         else:
             flash('Invalid file type')
     return render_template('main.html')
+
 
 # Processes the file that they uploaded
 def process_file(file):
@@ -77,6 +73,7 @@ def process_file(file):
             db.session.add(new_user)
             db.session.commit()
 
+
 # Validating the user. Returns the polling booth information if user exists.
 @main.route('/validate_user', methods=['GET', 'POST'])
 def validate_user():
@@ -90,93 +87,9 @@ def validate_user():
             return jsonify({"code": 0, "data": {"id": user.polling_booth,
                                                 "address": booth.address, 
                                                 "zip": booth.zip_code}});
-        
-@main.route('/av_wait/<int:booth_id>')
-def av_wait(booth_id):
-
-    """
-    Get average wait time for a polling booth.
-
-    Keyword arguments:
-    booth_id -- integer id of polling booth
-
-    """
-
-    polling_place = PollingBooth.query.filter_by(id=booth_id).first()
-
-    if polling_place:
-
-        past_hour = datetime.datetime.now() - datetime.timedelta(hours=1)
-
-        # get wait times in past hour
-        count = 0.0
-        elapsed_sum = 0
-        for time in polling_place.wait_times:
-            if time.start_time > past_hour and time.finished:
-                count += 1.0
-                elapsed_sum += time.elapsed
-
-        if (count != 0.0):
-            return jsonify({"code": 0, "data": elapsed_sum/count})
-        else:
-            return jsonify({"code": 2, "data": "Insufficient data."})
-
-    else:
-        return jsonify({"code": 2, "data": "Polling booth does not exist."})
 
 
-@main.route('/history_wait/<int:booth_id>')
-def history_wait(booth_id):
-
-    """
-    Get list of hourly average wait times for a polling booth (6 hours).
-
-    Keyword arguments:
-    booth_id -- integer id of polling booth
-
-    """
-
-    polling_place = PollingBooth.query.filter_by(id=booth_id).first()
-
-    if polling_place:
-
-        # calculate start of hourly increments of time
-        now = datetime.datetime.now().replace(minute=0, second=0, microsecond=0)
-        past_hours = []
-        for i in xrange(6):
-            past_hours.append(now - datetime.timedelta(hours=i+1))
-
-        # get hourly wait time averages of past six hours
-        counts = [0.0]*6
-        elapsed_sums = [0]*6
-
-        for time in polling_place.wait_times:
-            if time.finished:
-                if time.start_time > now:
-                    pass
-                else:
-                    for i in xrange(6):
-                        if time.start_time > past_hours[i]:
-                            counts[i] += 1
-                            elapsed_sums[i] += time.elapsed
-                            break
-
-        averages = []
-        for i in xrange(6):
-            minute_start = past_hours[i].hour * 60 + past_hours[i].minute
-
-            # if no data for that hour set average as -1
-            if counts[i] == 0.0:
-                averages.append({"hour_start": past_hours[i], "minute_start": minute_start, "time":-1})
-            else:
-                averages.append({"hour_start": past_hours[i], "minute_start": minute_start, "time":elapsed_sums[i]/counts[i]})
-
-        return jsonify({"code": 0, "data": averages})
-
-    else:
-        return jsonify({"code": 2, "data": "Polling booth does not exist."})
-
-
+# Logging the amount of time a user spent at the polling booth.
 @main.route('/log_time/<int:booth_id>', methods=['GET', 'POST'])
 def set_time(booth_id):
     if request.method == "POST":
@@ -195,37 +108,32 @@ def set_time(booth_id):
         return jsonify({"code": 2, "data": "Polling booth does not exist."})
     return jsonify({"code": 2, "data": "You need to send an elapsed time in the post."})
 
-@main.route('/polling_places')
-def polling_places():
 
-    """
-    Get all polling places.
+# Get historical wait times from polling_booths
+@main.route('/history_wait/<int:booth_id>')
+def history_wait(booth_id):
+    polling_place = PollingBooth.query.filter_by(id=booth_id).first()
+    if polling_place:
+        # calculate start of hourly increments of time
+        now = datetime.datetime.now().replace(minute=0, second=0, microsecond=0)
+        past_hours = {}
+        for i in xrange(6):
+            past_hours[(now - datetime.timedelta(hours=i)).hour] = []
 
-    """
+        for time in polling_place.wait_times:
+            if time.end_time.hour in past_hours:
+                if time.elapsed and float(time.elapsed).is_integer():
+                    past_hours[time.end_time.hour].append(time.elapsed)
+        
+        averages = []
+        for hour in past_hours:
+            if len(past_hours[hour]) == 0:
+                averages.append({"hour": hour, "time": -1})
+            else:
+                average = sum(past_hours[hour]) / len(past_hours[hour])
+                averages.append({"hour": hour, "time": int(average)})
+        return jsonify({"code": 0, "data": averages})
 
-    polling_places = PollingBooth.query.all()
-    return jsonify({"code": 0, "data":[{"id":x.id, "name":x.name, "address":x.address, "zipcode":x.zip_code} for x in polling_places]})
-
-
-@main.route('/lookup/<hashVal>', methods=['GET', 'POST'])
-def lookup(hashVal):
-
-    """
-    Gets the users information from the hash
-
-    Keyword arguments:
-    hash -- hash of user
-
-    """
-
-    user = User.query.filter_by(hashVal=hashVal).first()
-
-    if user == None:
-        return jsonify({"code": 1, "data": "User account does not exist."})
-
-    booth = PollingBooth.query.filter_by(id=user.polling_booth).first()
-
-    return jsonify({"code": 0, "data": {"address": booth.address, 
-                                            "zip": booth.zip_code}});
-
+    else:
+        return jsonify({"code": 2, "data": "Polling booth does not exist."})
     
