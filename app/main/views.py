@@ -177,79 +177,23 @@ def history_wait(booth_id):
         return jsonify({"code": 2, "data": "Polling booth does not exist."})
 
 
-# ASK BEN HOW TO GET THE ELAPSED TIME.
 @main.route('/log_time/<int:booth_id>', methods=['GET', 'POST'])
 def set_time(booth_id):
     if request.method == "POST":
         polling_booth = PollingBooth.query.filter_by(id=booth_id).first()
         if polling_booth:
-
             # Creating a wait_time
+            ## /TODO CHECK FOR REASONABLE INPUT.
             new_waittime = WaitTime(
                 elapsed = request.form['elapsed'],
-                polling_booth = polling_booth
+                polling_booth = booth_id
             )
             db.session.add(new_waittime)
             db.session.commit()
-            return jsonify({"code": 0, "data": new_waittime})
+            return jsonify({"code": 0, "data": "Submitted Succesfully"})
 
         return jsonify({"code": 2, "data": "Polling booth does not exist."})
     return jsonify({"code": 2, "data": "You need to send an elapsed time in the post."})
-
-
-# @main.route('/start_time/<phone>', methods=['GET', 'POST'])
-# def start_time(phone):
-
-#     """
-#     Start wait time timer for user.
-
-#     Keyword arguments:
-#     phone -- phone number of user (10 digit)
-
-#     """
-
-#     user = User.query.filter_by(phone=phone_format(phone)).first()
-
-#     if user == None:
-#         return jsonify({"code": 1, "data": "User account does not exist."})
-
-#     if user.waittime == None:
-#         wait_time = WaitTime()
-#         user.waittime = wait_time
-
-#         polling_place = PollingBooth.query.filter_by(id=user.polling_booth).first()
-#         polling_place.wait_times.append(wait_time)
-
-#         db.session.add(wait_time)
-#         db.session.commit()
-#         return jsonify({"code": 0, "data": "Wait time started."})
-#     else:
-#         return jsonify({"code": 2, "data": "Wait time already exists."})
-
-
-# @main.route('/end_time/<phone>', methods=['GET', 'POST'])
-# def end_time(phone):
-
-#     """
-#     End wait time timer for user.
-
-#     Keyword arguments:
-#     phone -- phone number of user (10 digit)
-
-#     """
-
-#     user = User.query.filter_by(phone=phone_format(phone)).first()
-
-#     if user == None:
-#         return jsonify({"code": 1, "data": "User account does not exist."})
-
-#     if user.waittime:
-#         wait_time = user.waittime
-#         wait_time.finished()
-#         return jsonify({"code": 0, "data": "Wait time ended."})
-#     else:
-#         return jsonify({"code": 2, "data": "Wait time doesn't exist."})
-
 
 @main.route('/polling_places')
 def polling_places():

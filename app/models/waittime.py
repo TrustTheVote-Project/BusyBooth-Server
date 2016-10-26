@@ -10,7 +10,7 @@ class WaitTime(db.Model):
     # person = db.Column(db.Integer, db.ForeignKey('users.id'))
 
     def __init__(self, elapsed, polling_booth):
-        self.elapased = elapsed
+        self.elapsed = int(elapsed)
         self.polling_booth = polling_booth
         self.end_time = datetime.datetime.now()
 
