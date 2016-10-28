@@ -47,19 +47,20 @@ def read_file():
 def process_file(file):
     reader = csv.DictReader(file)
     for line in reader:
-        street_number = line['Address'].split()[0]
-        stringToHash = line['First Name']+line['Last Name']+line['DOB']+street_number
-        hashVal = hashlib.sha256(stringToHash).hexdigest()
-
         boothAddress = line['Polling Booth']
-        boothZip = line['Polling Zip']
+        hashVal = line['Hash']
+        if(line['PollingPlaceSupervisor'] == '1'):
+            polling_place_supervisor = "true"
+        else:
+            polling_place_supervisor = "false"
+
+
 
         # Creating the new_booth if it needs to be created.
         new_booth = PollingBooth.query.filter_by(address=boothAddress).first()
         if new_booth == None:
             new_booth = PollingBooth(
-                address = boothAddress,
-                zip_code = boothZip
+                address = boothAddress
             )
             db.session.add(new_booth)
             db.session.commit()
@@ -68,7 +69,8 @@ def process_file(file):
         if User.query.filter_by(hashVal=hashVal).first() == None:
             new_user = User(
                 hashVal = hashVal,
-                polling_booth = new_booth.id
+                polling_booth = new_booth.id,
+                is_admin = polling_place_supervisor
             )
             db.session.add(new_user)
             db.session.commit()
@@ -86,7 +88,7 @@ def validate_user():
             booth = PollingBooth.query.filter_by(id=user.polling_booth).first()
             return jsonify({"code": 0, "data": {"id": user.polling_booth,
                                                 "address": booth.address, 
-                                                "zip": booth.zip_code}});
+                                                "is_admin": user.is_admin}});
 
 
 # Logging the amount of time a user spent at the polling booth.
