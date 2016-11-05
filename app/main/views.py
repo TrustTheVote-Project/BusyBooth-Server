@@ -90,6 +90,13 @@ def validate_user():
                                                 "address": booth.address, 
                                                 "is_admin": user.is_admin}});
 
+@main.route('/booths', methods=['GET', 'POST'])
+def get_booths():
+    if request.method == "POST":
+        zipcode = request.form['zip']
+        booths = [(booth.address, booth.id) for booth in PollingBooth.query.filter_by(zipCode=zipcode)]
+        return jsonify({"code": 0, "data":booths})
+
 
 # Logging the amount of time a user spent at the polling booth.
 @main.route('/log_time/<int:booth_id>', methods=['GET', 'POST'])
