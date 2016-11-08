@@ -1,12 +1,5 @@
 #!/usr/bin/env python
 import os
-from app import create_app, db
-from app.models import WaitTime, PollingBooth, User
-from flask.ext.script import Manager, Shell
-from flask.ext.migrate import Migrate, MigrateCommand
-from config import TestingConfig
-import time
-import csv
 
 # Import settings from .env file. Must define FLASK_CONFIG
 if os.path.exists('.env'):
@@ -15,6 +8,16 @@ if os.path.exists('.env'):
         var = line.strip().split('=')
         if len(var) == 2:
             os.environ[var[0]] = var[1]
+
+
+from app import create_app, db
+from app.models import WaitTime, PollingBooth, User
+from flask.ext.script import Manager, Shell
+from flask.ext.migrate import Migrate, MigrateCommand
+from config import TestingConfig
+import time
+import csv
+
 
 app = create_app(os.getenv('FLASK_CONFIG') or 'default')
 manager = Manager(app)
@@ -37,6 +40,7 @@ def drop_db():
 
 @manager.command 
 def file_upload(filename):
+    print os.environ.get('DATABASE_URL') 
     with open(filename, 'r') as file:
         reader = csv.DictReader(file)
         for line in reader:
