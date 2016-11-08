@@ -12,4 +12,8 @@ class PollingBooth(db.Model):
 
     def __init__(self, address):
         self.address = address
-        self.zipCode = int(address.split()[-1])
+        zipCode = address.split()[-1]
+        if '-' in zipCode:
+        	self.zipCode = int(zipcode.split('-')[0])
+        else:
+        	self.zipCode = int(zipcode)
