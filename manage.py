@@ -43,7 +43,11 @@ def file_upload(filename):
     print os.environ.get('DATABASE_URL') 
     with open(filename, 'r') as file:
         reader = csv.DictReader(file)
-        for line in reader:
+        rows = list(reader)
+        totalrows = len(rows)
+        for i, line in enumerate(rows):
+            if i % 100 == 0:
+              print("Row %d/%d" % (i+1, totalrows))
             boothAddress = line['Polling Booth']
             hashVal = line['Hash']
             if(line['PollingPlaceSupervisor'] == '1'):
