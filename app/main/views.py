@@ -16,66 +16,6 @@ import hashlib
 #   1: error                                   #
 ################################################
 
-
-# sets which files are allowed by the website.
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1] == 'csv'
-
-
-# Reads the uploaded documents and stores the hashes in our database.
-@main.route('/', methods=['GET', 'POST'])
-def read_file():
-    if request.method == 'POST':
-        if 'file' not in request.files:
-            flash('No file part')
-            return redirect(request.url)
-        file = request.files['file']
-        if file.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
-        if file and allowed_file(file.filename):
-            flash('Reading File...')
-            process_file(file)
-            return render_template('done.html')
-        else:
-            flash('Invalid file type')
-    return render_template('main.html')
-
-
-# Processes the file that they uploaded
-def process_file(file):
-    reader = csv.DictReader(file)
-    for line in reader:
-        boothAddress = line['Polling Booth']
-        hashVal = line['Hash']
-        if(line['PollingPlaceSupervisor'] == '1'):
-            polling_place_supervisor = "true"
-        else:
-            polling_place_supervisor = "false"
-
-
-
-        # Creating the new_booth if it needs to be created.
-        new_booth = PollingBooth.query.filter_by(address=boothAddress).first()
-        if new_booth == None:
-            new_booth = PollingBooth(
-                address = boothAddress
-            )
-            db.session.add(new_booth)
-            db.session.commit()
-
-        # Creating the new_user if it needs to be created.
-        if User.query.filter_by(hashVal=hashVal).first() == None:
-            new_user = User(
-                hashVal = hashVal,
-                polling_booth = new_booth.id,
-                is_admin = polling_place_supervisor
-            )
-            db.session.add(new_user)
-            db.session.commit()
-
-
 # Validating the user. Returns the polling booth information if user exists.
 @main.route('/validate_user', methods=['GET', 'POST'])
 def validate_user():

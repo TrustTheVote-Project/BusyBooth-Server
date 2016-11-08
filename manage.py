@@ -6,6 +6,7 @@ from flask.ext.script import Manager, Shell
 from flask.ext.migrate import Migrate, MigrateCommand
 from config import TestingConfig
 import time
+import csv
 
 # Import settings from .env file. Must define FLASK_CONFIG
 if os.path.exists('.env'):
@@ -33,6 +34,39 @@ def drop_db():
     db.drop_all()
     db.create_all()
     db.session.commit()
+
+@manager.command 
+def file_upload(filename):
+    with open(filename, 'r') as file:
+        reader = csv.DictReader(file)
+        for line in reader:
+            boothAddress = line['Polling Booth']
+            hashVal = line['Hash']
+            if(line['PollingPlaceSupervisor'] == '1'):
+                polling_place_supervisor = "true"
+            else:
+                polling_place_supervisor = "false"
+
+
+
+            # Creating the new_booth if it needs to be created.
+            new_booth = PollingBooth.query.filter_by(address=boothAddress).first()
+            if new_booth == None:
+                new_booth = PollingBooth(
+                    address = boothAddress
+                )
+                db.session.add(new_booth)
+                db.session.commit()
+
+            # Creating the new_user if it needs to be created.
+            if User.query.filter_by(hashVal=hashVal).first() == None:
+                new_user = User(
+                    hashVal = hashVal,
+                    polling_booth = new_booth.id,
+                    is_admin = polling_place_supervisor
+                )
+                db.session.add(new_user)
+                db.session.commit()
 
 
 @manager.command
