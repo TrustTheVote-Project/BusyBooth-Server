@@ -6,7 +6,7 @@ class PollingBooth(db.Model):
     __tablename__ = 'pollingbooth'
     id = db.Column(db.Integer, primary_key=True)
     address = db.Column(db.String(64))
-    zipCode = db.Column(db.Integer)
+    zipCode = db.Column(db.String(64))
     people = db.relationship('User', backref='pollingbooth', lazy='dynamic')
     wait_times = db.relationship('WaitTime', backref='pollingidbooth', lazy='dynamic')
 
@@ -14,6 +14,6 @@ class PollingBooth(db.Model):
         self.address = address
         zipCode = address.split()[-1]
         if '-' in zipCode:
-        	self.zipCode = int(zipcode.split('-')[0])
+        	self.zipCode = zipCode.split('-')[0]
         else:
-        	self.zipCode = int(zipcode)
+        	self.zipCode = zipCode
